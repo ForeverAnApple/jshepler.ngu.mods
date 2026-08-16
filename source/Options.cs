@@ -73,6 +73,10 @@ namespace jshepler.ngu.mods
             RemoteTriggers.FightBoss.Enabled = Config.Bind("RemoteTriggers.FightBoss", "Enabled", true, "enables fight boss trigger");
             RemoteTriggers.Kitty.Enabled = Config.Bind("RemoteTriggers.Kitty", "Enabled", true, "enables kitty trigger");
             RemoteTriggers.Save.Enabled = Config.Bind("RemoteTriggers.Save", "Enabled", true, "enables save trigger");
+            RemoteTriggers.AutoBoss.Enabled = Config.Bind("RemoteTriggers.AutoBoss", "Enabled", true, "enables the trigger that toggles AutoBoss.Enabled");
+            RemoteTriggers.FunnelEnergy.Enabled = Config.Bind("RemoteTriggers.FunnelEnergy", "Enabled", true, "enables the trigger that toggles AutoFunnel.Energy.Enabled");
+            RemoteTriggers.FunnelMagic.Enabled = Config.Bind("RemoteTriggers.FunnelMagic", "Enabled", true, "enables the trigger that toggles AutoFunnel.Magic.Enabled");
+            RemoteTriggers.Test.Enabled = Config.Bind("RemoteTriggers.Test", "Enabled", false, "DEV ONLY - enables the testfree/testseed triggers, which move energy/magic in and out of sinks on demand");
 
             Twitch.Enabled = Config.Bind("Twitch", "Enabled", false, "Enables twitch integration");
             Twitch.AutoConnect = Config.Bind("Twitch", "AutoConnect", false, "Connects to twitch when game starts");
@@ -202,6 +206,26 @@ namespace jshepler.ngu.mods
             }
 
             internal static class Save
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
+            internal static class AutoBoss
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
+            internal static class FunnelEnergy
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
+            internal static class FunnelMagic
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
+            internal static class Test
             {
                 internal static ConfigEntry<bool> Enabled;
             }

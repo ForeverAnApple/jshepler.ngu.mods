@@ -33,10 +33,11 @@ namespace jshepler.ngu.mods.WebService.GO
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
                     return () => Plugin.ShowOverrideNotification("NGU2GO: hacks");
 
+                // no notification - the local GO autosync polls this every 10s, a toast would be permanent
                 case "equipped":
                     json = Loadouts.BuildCurrentEquipJson();
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
-                    return () => Plugin.ShowOverrideNotification("NGU2GO: equipped");
+                    return () => { };
 
                 // read-only snapshot for external verification - no notification, it gets polled
                 case "status":
@@ -170,13 +171,9 @@ namespace jshepler.ngu.mods.WebService.GO
             var unlocked = Math.Min(character.bloodMagicController.ritualsUnlocked(), Math.Min(bmControllers.Length, character.bloodMagic.ritual.Count));
             for (var i = 0; i < unlocked; i++)
             {
-                var magic = character.bloodMagic.ritual[i].magic;
-                if (magic <= 0L)
-                    continue;
-
                 var o = new JSONObject();
                 o.Add("index", i);
-                o.Add("magic", magic);
+                o.Add("magic", character.bloodMagic.ritual[i].magic);
                 ritualAssignments.Add(o);
             }
 
@@ -187,6 +184,7 @@ namespace jshepler.ngu.mods.WebService.GO
             funnel.Add("energyTargetAmount", AutoFunnel.EnergyTargetAmount);
             funnel.Add("magicTarget", AutoFunnel.MagicTarget);
             funnel.Add("magicTargetAmount", AutoFunnel.MagicTargetAmount);
+            funnel.Add("ritualsUnlockedCount", unlocked);
             funnel.Add("augAssignments", augAssignments);
             funnel.Add("ritualAssignments", ritualAssignments);
 
@@ -196,6 +194,11 @@ namespace jshepler.ngu.mods.WebService.GO
             root.Add("idleEnergy", character.idleEnergy);
             root.Add("curMagic", character.magic.curMagic);
             root.Add("idleMagic", character.magic.idleMagic);
+
+            // the funnel overrides this while adding and restores it - a value that moves between
+            // polls means the user's typed amount is being clobbered
+            root.Add("input", character.input.energyMagicInput);
+            root.Add("ap", character.arbitrary.curArbitraryPoints);
             root.Add("boss", boss);
             root.Add("funnel", funnel);
 

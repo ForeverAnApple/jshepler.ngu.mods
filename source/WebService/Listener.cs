@@ -32,40 +32,106 @@ namespace jshepler.ngu.mods.WebService
 
             Plugin.OnGameStart += (o, e) =>
             {
+                // OnGameStart fires again when a save is loaded - a second listener on the same
+                // prefix throws and must not be started (this killed the listener 2026-08-16)
+                if (_started)
+                    return;
+                _started = true;
+
                 if (HttpListener.IsSupported)
-                    Task.Run(() => RunListener());
+                    Task.Run(() => Supervise());
                 else
                     Plugin.LogInfo("HttpListener NOT SUPPORTED!!!");
             };
 
             Plugin.OnUpdate += (o, e) =>
             {
-                while (_actions.Count > 0)
-                    _actions.Dequeue()();
+                while (true)
+                {
+                    Action action;
+                    lock (_actions)
+                    {
+                        if (_actions.Count == 0)
+                            break;
+                        action = _actions.Dequeue();
+                    }
+
+                    try { action(); }
+                    catch (Exception ex) { Plugin.LogInfo($"Listener: queued action failed: {ex}"); }
+                }
             };
+        }
+
+        private static bool _started = false;
+
+        // the accept loop can die in ways no per-request handling can catch (e.g. GetContextAsync
+        // throwing on a client that aborts mid-accept, which killed the listener 2026-08-16);
+        // whatever happens, tear the listener down and start a fresh one
+        private static async Task Supervise()
+        {
+            while (true)
+            {
+                try
+                {
+                    await RunListener();
+                    Plugin.LogInfo("Listener: accept loop exited, restarting");
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogInfo($"Listener: accept loop died, restarting: {ex}");
+                }
+
+                await Task.Delay(3000);
+            }
         }
 
         private static async Task RunListener()
         {
-            var listener = new HttpListener();
+            using var listener = new HttpListener();
             listener.Prefixes.Add(Options.RemoteTriggers.UrlPrefix.Value);
             listener.Start();
 
             while (true)
             {
-                var context = await listener.GetContextAsync();
-
-                // handle preflight requests
-                if (context.Request.HttpMethod == "OPTIONS")
+                HttpListenerContext context;
+                try
                 {
-                    context.Response.SendResponse(HttpStatusCode.OK);
+                    context = await listener.GetContextAsync();
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogInfo($"Listener: accept failed: {ex.Message}");
+                    if (!listener.IsListening)
+                        throw;
                     continue;
                 }
 
-                // [0] /
-                // [1] ngu/
-                var segments = context.Request.Url.Segments.Skip(2).Select(s => s.TrimEnd('/').ToLowerInvariant()).ToArray();
-                Dispatch(context, segments);
+                // one bad request must never kill the listener task - it is the only transport
+                try
+                {
+                    // handle preflight requests
+                    if (context.Request.HttpMethod == "OPTIONS")
+                    {
+                        context.Response.SendResponse(HttpStatusCode.OK);
+                        continue;
+                    }
+
+                    // [0] /
+                    // [1] ngu/
+                    var segments = context.Request.Url.Segments.Skip(2).Select(s => s.TrimEnd('/').ToLowerInvariant()).ToArray();
+                    if (segments.Length == 0)
+                    {
+                        context.Response.SendResponse(HttpStatusCode.NotFound);
+                        continue;
+                    }
+
+                    Dispatch(context, segments);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogInfo($"Listener: request handling failed: {ex}");
+                    try { context.Response.SendResponse(HttpStatusCode.InternalServerError); } catch { }
+                }
             }
         }
 
@@ -75,11 +141,14 @@ namespace jshepler.ngu.mods.WebService
         {
             var done = new ManualResetEventSlim(false);
 
-            _actions.Enqueue(() =>
+            lock (_actions)
             {
-                try { action(); }
-                finally { done.Set(); }
-            });
+                _actions.Enqueue(() =>
+                {
+                    try { action(); }
+                    finally { done.Set(); }
+                });
+            }
 
             done.Wait(5000);
         }
@@ -98,15 +167,15 @@ namespace jshepler.ngu.mods.WebService
                     break;
 
                 case "ngu2go":
-                    _actions.Enqueue(GO.NGU2GO.HandleRequest(context, segments[1]));
+                    lock (_actions) { _actions.Enqueue(GO.NGU2GO.HandleRequest(context, segments[1])); }
                     break;
 
                 case "go2ngu":
-                    _actions.Enqueue(GO.GO2NGU.HandleRequest(context, segments[1]));
+                    lock (_actions) { _actions.Enqueue(GO.GO2NGU.HandleRequest(context, segments[1])); }
                     break;
 
                 case "data":
-                    _actions.Enqueue(Data.HandleRequest(context, segments));
+                    lock (_actions) { _actions.Enqueue(Data.HandleRequest(context, segments)); }
                     break;
 
                 case "autoboost":
@@ -114,12 +183,12 @@ namespace jshepler.ngu.mods.WebService
                 case "tossgold":
                 case "fightboss":
                 case "kitty":
-                    _actions.Enqueue(Triggers.Dispatcher.HandleRequest(context, segments[0]));
+                    lock (_actions) { _actions.Enqueue(Triggers.Dispatcher.HandleRequest(context, segments[0])); }
                     context.Response.SendResponse(HttpStatusCode.OK);
                     break;
 
                 case "twitch":
-                    _actions.Enqueue(Twitch.API.HandleAuthRedirectRequest(context));
+                    lock (_actions) { _actions.Enqueue(Twitch.API.HandleAuthRedirectRequest(context)); }
                     break;
 
                 default:

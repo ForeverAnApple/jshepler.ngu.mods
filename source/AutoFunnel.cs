@@ -14,8 +14,14 @@ namespace jshepler.ngu.mods
         private const float TICK_SECONDS = 0.5f;
         private static readonly Color OffColor = new Color32(150, 150, 150, 255);
         private static readonly Vector2 ButtonSize = new Vector2(120f, 24f);
-        private static readonly Vector2 ButtonOffset = new Vector2(-8f, -8f);
         private static readonly Vector2 TopRight = new Vector2(1f, 1f);
+
+        // both toggles hang off the top-right corner of their menu's header, but each screen's
+        // corner is occupied differently, so the two offsets are tuned separately
+        private static readonly Vector2 EnergyButtonOffset = new Vector2(-8f, -8f);
+
+        // clears the "Cap All Rituals" + "WTF do I do?" pair that ends flush at the header's right edge
+        private static readonly Vector2 MagicButtonOffset = new Vector2(-8f, -56f);
 
         internal static bool EnergyEnabled
         {
@@ -62,7 +68,7 @@ namespace jshepler.ngu.mods
             var character = Plugin.Character;
 
             var augGO = character.augmentsController.totalPowerText.transform.parent
-                .CreateModButton("Auto Funnel Toggle", ButtonSize, ButtonOffset, TopRight);
+                .CreateModButton("Auto Funnel Toggle", ButtonSize, EnergyButtonOffset, TopRight);
 
             _energyImage = augGO.GetComponent<Image>();
             _energyText = augGO.GetComponentInChildren<Text>();
@@ -73,7 +79,7 @@ namespace jshepler.ngu.mods
             });
 
             var bmGO = character.bloodMagicController.bloodText.transform.parent
-                .CreateModButton("Auto Funnel Toggle", ButtonSize, ButtonOffset, TopRight);
+                .CreateModButton("Auto Funnel Toggle", ButtonSize, MagicButtonOffset, TopRight);
 
             _magicImage = bmGO.GetComponent<Image>();
             _magicText = bmGO.GetComponentInChildren<Text>();

@@ -52,6 +52,30 @@ namespace jshepler.ngu.mods.WebService.Triggers
             set => Options.RemoteTriggers.Save.Enabled.Value = value;
         }
 
+        internal static bool AutoBossEnabled
+        {
+            get => Options.RemoteTriggers.AutoBoss.Enabled.Value;
+            set => Options.RemoteTriggers.AutoBoss.Enabled.Value = value;
+        }
+
+        internal static bool FunnelEnergyEnabled
+        {
+            get => Options.RemoteTriggers.FunnelEnergy.Enabled.Value;
+            set => Options.RemoteTriggers.FunnelEnergy.Enabled.Value = value;
+        }
+
+        internal static bool FunnelMagicEnabled
+        {
+            get => Options.RemoteTriggers.FunnelMagic.Enabled.Value;
+            set => Options.RemoteTriggers.FunnelMagic.Enabled.Value = value;
+        }
+
+        internal static bool TestEnabled
+        {
+            get => Options.RemoteTriggers.Test.Enabled.Value;
+            set => Options.RemoteTriggers.Test.Enabled.Value = value;
+        }
+
         internal static bool TwitchIntegrationEnabled
         {
             get => Options.Twitch.Enabled.Value;
@@ -120,7 +144,7 @@ namespace jshepler.ngu.mods.WebService.Triggers
 
         private static void InitPopup()
         {
-            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 340);
+            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 500);
             _blocker = buildBLocker();
             IsOpen = false;
 
@@ -231,6 +255,34 @@ namespace jshepler.ngu.mods.WebService.Triggers
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("disabled", !SaveEnabled ? _selected : _notSelected)) SaveEnabled = false;
             if (GUILayout.Button("enabled", SaveEnabled ? _selected : _notSelected)) SaveEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Auto Boss Toggle");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !AutoBossEnabled ? _selected : _notSelected)) AutoBossEnabled = false;
+            if (GUILayout.Button("enabled", AutoBossEnabled ? _selected : _notSelected)) AutoBossEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Funnel Energy Toggle");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !FunnelEnergyEnabled ? _selected : _notSelected)) FunnelEnergyEnabled = false;
+            if (GUILayout.Button("enabled", FunnelEnergyEnabled ? _selected : _notSelected)) FunnelEnergyEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Funnel Magic Toggle");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = false;
+            if (GUILayout.Button("enabled", FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("<b>Test (dev only)</b>");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !TestEnabled ? _selected : _notSelected)) TestEnabled = false;
+            if (GUILayout.Button("enabled", TestEnabled ? _selected : _notSelected)) TestEnabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.FlexibleSpace();

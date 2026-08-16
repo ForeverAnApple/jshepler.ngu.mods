@@ -106,32 +106,40 @@ namespace jshepler.ngu.mods.WebService
                     continue;
                 }
 
-                // one bad request must never kill the listener task - it is the only transport
-                try
-                {
-                    // handle preflight requests
-                    if (context.Request.HttpMethod == "OPTIONS")
-                    {
-                        context.Response.SendResponse(HttpStatusCode.OK);
-                        continue;
-                    }
+                // each request gets its own task: a slow or half-dead client can only wedge its
+                // own response, never the accept loop (a blocked inline SendResponse starved the
+                // whole listener 2026-08-16 - accepted connections queued forever with no reply)
+                _ = Task.Run(() => HandleContext(context));
+            }
+        }
 
-                    // [0] /
-                    // [1] ngu/
-                    var segments = context.Request.Url.Segments.Skip(2).Select(s => s.TrimEnd('/').ToLowerInvariant()).ToArray();
-                    if (segments.Length == 0)
-                    {
-                        context.Response.SendResponse(HttpStatusCode.NotFound);
-                        continue;
-                    }
-
-                    Dispatch(context, segments);
-                }
-                catch (Exception ex)
+        // one bad request must never kill or block the transport
+        private static void HandleContext(HttpListenerContext context)
+        {
+            try
+            {
+                // handle preflight requests
+                if (context.Request.HttpMethod == "OPTIONS")
                 {
-                    Plugin.LogInfo($"Listener: request handling failed: {ex}");
-                    try { context.Response.SendResponse(HttpStatusCode.InternalServerError); } catch { }
+                    context.Response.SendResponse(HttpStatusCode.OK);
+                    return;
                 }
+
+                // [0] /
+                // [1] ngu/
+                var segments = context.Request.Url.Segments.Skip(2).Select(s => s.TrimEnd('/').ToLowerInvariant()).ToArray();
+                if (segments.Length == 0)
+                {
+                    context.Response.SendResponse(HttpStatusCode.NotFound);
+                    return;
+                }
+
+                Dispatch(context, segments);
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogInfo($"Listener: request handling failed: {ex}");
+                try { context.Response.SendResponse(HttpStatusCode.InternalServerError); } catch { }
             }
         }
 

@@ -70,6 +70,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             set => Options.RemoteTriggers.FunnelMagic.Enabled.Value = value;
         }
 
+        internal static bool CapPullEnabled
+        {
+            get => Options.RemoteTriggers.CapPull.Enabled.Value;
+            set => Options.RemoteTriggers.CapPull.Enabled.Value = value;
+        }
+
         internal static bool TestEnabled
         {
             get => Options.RemoteTriggers.Test.Enabled.Value;
@@ -144,7 +150,7 @@ namespace jshepler.ngu.mods.WebService.Triggers
 
         private static void InitPopup()
         {
-            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 500);
+            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 530);
             _blocker = buildBLocker();
             IsOpen = false;
 
@@ -276,6 +282,13 @@ namespace jshepler.ngu.mods.WebService.Triggers
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("disabled", !FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = false;
             if (GUILayout.Button("enabled", FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Cap Pull Toggle");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !CapPullEnabled ? _selected : _notSelected)) CapPullEnabled = false;
+            if (GUILayout.Button("enabled", CapPullEnabled ? _selected : _notSelected)) CapPullEnabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal("box");

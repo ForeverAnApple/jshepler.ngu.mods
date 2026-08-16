@@ -16,6 +16,7 @@ namespace jshepler.ngu.mods
             AutoBoss.Enabled = Config.Bind("AutoBoss", "Enabled", false, "if enabled, automatically nukes/fights the boss whenever it's beatable; toggled in-game from the boss menu");
             AutoFunnel.EnergyEnabled = Config.Bind("AutoFunnel", "Energy.Enabled", false, "if enabled, idle energy is repeatedly assigned to whichever augment/upgrade already has the most energy");
             AutoFunnel.MagicEnabled = Config.Bind("AutoFunnel", "Magic.Enabled", false, "if enabled, idle magic is repeatedly assigned to whichever ritual already has the most magic");
+            CapPull.Enabled = Config.Bind("CapPull", "Enabled", false, "if enabled, a basic training cap button pulls the energy it's short of out of augmentation (largest allocation first)");
 
             BloodMagic.NotifiedSpells = Config.Bind("BloodMagic", "NotifiedSpells", NotifiedSpells.IP | NotifiedSpells.GUFFA | NotifiedSpells.GUFFB, "For which spells the Blood Magic button turns purple to notify being ready to cast");
 
@@ -76,6 +77,7 @@ namespace jshepler.ngu.mods
             RemoteTriggers.AutoBoss.Enabled = Config.Bind("RemoteTriggers.AutoBoss", "Enabled", true, "enables the trigger that toggles AutoBoss.Enabled");
             RemoteTriggers.FunnelEnergy.Enabled = Config.Bind("RemoteTriggers.FunnelEnergy", "Enabled", true, "enables the trigger that toggles AutoFunnel.Energy.Enabled");
             RemoteTriggers.FunnelMagic.Enabled = Config.Bind("RemoteTriggers.FunnelMagic", "Enabled", true, "enables the trigger that toggles AutoFunnel.Magic.Enabled");
+            RemoteTriggers.CapPull.Enabled = Config.Bind("RemoteTriggers.CapPull", "Enabled", true, "enables the trigger that toggles CapPull.Enabled");
             RemoteTriggers.Test.Enabled = Config.Bind("RemoteTriggers.Test", "Enabled", false, "DEV ONLY - enables the testfree/testseed triggers, which move energy/magic in and out of sinks on demand");
 
             Twitch.Enabled = Config.Bind("Twitch", "Enabled", false, "Enables twitch integration");
@@ -225,6 +227,11 @@ namespace jshepler.ngu.mods
                 internal static ConfigEntry<bool> Enabled;
             }
 
+            internal static class CapPull
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
             internal static class Test
             {
                 internal static ConfigEntry<bool> Enabled;
@@ -240,6 +247,11 @@ namespace jshepler.ngu.mods
         {
             internal static ConfigEntry<bool> EnergyEnabled;
             internal static ConfigEntry<bool> MagicEnabled;
+        }
+
+        internal static class CapPull
+        {
+            internal static ConfigEntry<bool> Enabled;
         }
 
         internal static class AutoSnipe

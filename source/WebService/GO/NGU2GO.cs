@@ -177,6 +177,25 @@ namespace jshepler.ngu.mods.WebService.GO
                 ritualAssignments.Add(o);
             }
 
+            // flat index: 0..5 attack rows, 6..11 defense rows - the index trigger/testcap takes
+            var trainings = new JSONArray();
+            var offense = character.allOffenseController.trains;
+            var defense = character.allDefenseController.trains;
+            for (var i = 0; i < offense.Length + defense.Length; i++)
+            {
+                var isOffense = i < offense.Length;
+                var row = isOffense ? i : i - offense.Length;
+
+                var o = new JSONObject();
+                o.Add("index", i);
+                o.Add("kind", isOffense ? "attack" : "defense");
+                o.Add("id", row);
+                o.Add("energy", isOffense ? character.training.attackEnergy[row] : character.training.defenseEnergy[row]);
+                o.Add("cap", isOffense ? character.training.attackCaps[row] : character.training.defenseCaps[row]);
+                o.Add("locked", isOffense ? offense[row].locked() : defense[row].locked());
+                trainings.Add(o);
+            }
+
             var funnel = new JSONObject();
             funnel.Add("energyEnabled", AutoFunnel.EnergyEnabled);
             funnel.Add("magicEnabled", AutoFunnel.MagicEnabled);
@@ -201,6 +220,9 @@ namespace jshepler.ngu.mods.WebService.GO
             root.Add("ap", character.arbitrary.curArbitraryPoints);
             root.Add("boss", boss);
             root.Add("funnel", funnel);
+            root.Add("capPullEnabled", CapPull.Enabled);
+            root.Add("syncTraining", character.settings.syncTraining);
+            root.Add("trainings", trainings);
 
             return root.ToString();
         }

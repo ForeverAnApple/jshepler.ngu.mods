@@ -42,6 +42,15 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "funnelmagic":
                     return funnelToggle(isEnergy: false);
 
+                case "cappull":
+                    return capPullToggle();
+
+                case "testcap":
+                    return testCap(context);
+
+                case "testsetcap":
+                    return testSetCap(context);
+
                 case "testfree":
                     return testMove(context, isSeed: false);
 
@@ -221,6 +230,36 @@ namespace jshepler.ngu.mods.WebService.Triggers
             };
         }
 
+        // sets a basic training row's cap so cap-pull shortfalls can be created and undone in tests
+        internal static Action testSetCap(HttpListenerContext context)
+        {
+            if (!TriggerConfig.TestEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: testsetcap disabled");
+
+            var query = parseQuery(context);
+
+            if (!query.TryGetValue("training", out var tv) || !int.TryParse(tv, out var index) || index < 0 || index > 11)
+                return () => Plugin.ShowOverrideNotification("trigger: testsetcap - training must be 0..11");
+
+            if (!query.TryGetValue("cap", out var cv) || !int.TryParse(cv, out var cap) || cap < 0)
+                return () => Plugin.ShowOverrideNotification("trigger: testsetcap - cap must be a non-negative integer");
+
+            return () =>
+            {
+                var training = Plugin.Character.training;
+                var isOffense = index < 6;
+                var id = isOffense ? index : index - 6;
+                var caps = isOffense ? training.attackCaps : training.defenseCaps;
+
+                var before = caps[id];
+                caps[id] = cap;
+
+                var message = $"trigger: testsetcap {(isOffense ? "attack" : "defense")} {id} cap {before:N0} -> {cap:N0}";
+                Plugin.LogInfo(message);
+                Plugin.ShowOverrideNotification(message);
+            };
+        }
+
         // grants an exact amount of AP (no gain bonuses applied, unlike Character.addAP)
         internal static Action testAp(HttpListenerContext context)
         {
@@ -243,6 +282,64 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 var message = $"trigger: testap - AP {before:N0} -> {arbitrary.curArbitraryPoints:N0}";
                 Plugin.LogInfo(message);
                 Plugin.ShowOverrideNotification(message);
+            };
+        }
+
+        internal static Action capPullToggle()
+        {
+            if (!TriggerConfig.CapPullEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: cappull disabled");
+
+            return () =>
+            {
+                mods.CapPull.Enabled = !mods.CapPull.Enabled;
+                Plugin.ShowOverrideNotification($"trigger: cappull {(mods.CapPull.Enabled ? "ON" : "OFF")}");
+            };
+        }
+
+        // drives the row's cap button without touching the UI: same OffenseTraining/DefenseTraining.cap()
+        // that OffenseClickCap.OnPointerDown calls
+        internal static Action testCap(HttpListenerContext context)
+        {
+            if (!TriggerConfig.TestEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: testcap disabled");
+
+            var query = parseQuery(context);
+
+            if (!query.TryGetValue("training", out var value) || !int.TryParse(value, out var index) || index < 0)
+                return () => Plugin.ShowOverrideNotification("trigger: testcap - training must be a non-negative integer");
+
+            return () =>
+            {
+                try
+                {
+                    var character = Plugin.Character;
+                    var offense = character.allOffenseController.trains;
+                    var isOffense = index < offense.Length;
+                    var row = isOffense ? index : index - offense.Length;
+
+                    var training = character.training;
+                    var before = isOffense ? training.attackEnergy[row] : training.defenseEnergy[row];
+                    var idleBefore = character.idleEnergy;
+
+                    if (!mods.CapPull.InvokeCap(index))
+                    {
+                        Plugin.ShowOverrideNotification($"trigger: testcap - training {index} out of range (0-{offense.Length + character.allDefenseController.trains.Length - 1})");
+                        return;
+                    }
+
+                    var after = isOffense ? training.attackEnergy[row] : training.defenseEnergy[row];
+                    var message = $"trigger: testcap {(isOffense ? "attack" : "defense")} {row + 1} {before} -> {after}, idle {idleBefore} -> {character.idleEnergy}";
+
+                    Plugin.ShowOverrideNotification(message);
+                    Plugin.LogInfo(message);
+                }
+
+                catch (Exception ex)
+                {
+                    Plugin.LogInfo($"trigger: testcap threw:\n{ex}");
+                    Plugin.ShowOverrideNotification("trigger: testcap failed - see log");
+                }
             };
         }
 

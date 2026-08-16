@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
 
@@ -68,6 +69,21 @@ namespace jshepler.ngu.mods.WebService
             }
         }
 
+        // queues the action for the unity thread and waits for it, so a trigger's response means "done", not "queued"
+        // (the event is deliberately not disposed - on timeout the queued action still needs it)
+        private static void RunOnMainThread(Action action)
+        {
+            var done = new ManualResetEventSlim(false);
+
+            _actions.Enqueue(() =>
+            {
+                try { action(); }
+                finally { done.Set(); }
+            });
+
+            done.Wait(5000);
+        }
+
         private static void Dispatch(HttpListenerContext context, string[] segments)
         {
             switch (segments[0])
@@ -77,7 +93,8 @@ namespace jshepler.ngu.mods.WebService
                     break;
 
                 case "trigger":
-                    _actions.Enqueue(Triggers.Dispatcher.HandleRequest(context, segments[1]));
+                    RunOnMainThread(Triggers.Dispatcher.HandleRequest(context, segments[1]));
+                    context.Response.SendResponse(HttpStatusCode.OK);
                     break;
 
                 case "ngu2go":

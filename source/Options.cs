@@ -13,6 +13,10 @@ namespace jshepler.ngu.mods
             AutoSnipe.TargetEnemy = Config.Bind("AutoSnipe", "TargetEnemy", 0, "used to target specific enemy in specific zone; enter enemy number (from bestiary), 0 = bosses");
             AutoMergeTransform.Enabled = Config.Bind("AutoMergeTransform", "Enabled", false, "enables/disables auto merging and transforming of pendants and looties");
 
+            AutoBoss.Enabled = Config.Bind("AutoBoss", "Enabled", false, "if enabled, automatically nukes/fights the boss whenever it's beatable; toggled in-game from the boss menu");
+            AutoFunnel.EnergyEnabled = Config.Bind("AutoFunnel", "Energy.Enabled", false, "if enabled, idle energy is repeatedly assigned to whichever augment/upgrade already has the most energy");
+            AutoFunnel.MagicEnabled = Config.Bind("AutoFunnel", "Magic.Enabled", false, "if enabled, idle magic is repeatedly assigned to whichever ritual already has the most magic");
+
             BloodMagic.NotifiedSpells = Config.Bind("BloodMagic", "NotifiedSpells", NotifiedSpells.IP | NotifiedSpells.GUFFA | NotifiedSpells.GUFFB, "For which spells the Blood Magic button turns purple to notify being ready to cast");
 
             Cards.AutoSortEnabled = Config.Bind("Cards", "AutoSort.Enabled", true, "if enabled, sorts cards as they are added");
@@ -68,6 +72,7 @@ namespace jshepler.ngu.mods
             RemoteTriggers.TossGold.Enabled = Config.Bind("RemoteTriggers.TossGold", "Enabled", true, "enables toss gold trigger");
             RemoteTriggers.FightBoss.Enabled = Config.Bind("RemoteTriggers.FightBoss", "Enabled", true, "enables fight boss trigger");
             RemoteTriggers.Kitty.Enabled = Config.Bind("RemoteTriggers.Kitty", "Enabled", true, "enables kitty trigger");
+            RemoteTriggers.Save.Enabled = Config.Bind("RemoteTriggers.Save", "Enabled", true, "enables save trigger");
 
             Twitch.Enabled = Config.Bind("Twitch", "Enabled", false, "Enables twitch integration");
             Twitch.AutoConnect = Config.Bind("Twitch", "AutoConnect", false, "Connects to twitch when game starts");
@@ -195,6 +200,22 @@ namespace jshepler.ngu.mods
             {
                 internal static ConfigEntry<bool> Enabled;
             }
+
+            internal static class Save
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+        }
+
+        internal static class AutoBoss
+        {
+            internal static ConfigEntry<bool> Enabled;
+        }
+
+        internal static class AutoFunnel
+        {
+            internal static ConfigEntry<bool> EnergyEnabled;
+            internal static ConfigEntry<bool> MagicEnabled;
         }
 
         internal static class AutoSnipe

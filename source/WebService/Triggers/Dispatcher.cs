@@ -29,6 +29,9 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "kitty":
                     return kitty();
 
+                case "save":
+                    return save();
+
                 default:
                     return () => Plugin.ShowOverrideNotification($"unknown trigger: {trigger}");
             }
@@ -133,6 +136,37 @@ namespace jshepler.ngu.mods.WebService.Triggers
             {
                 Plugin.ShowOverrideNotification("trigger: fightboss");
                 Plugin.Character.StartCoroutine(FightBoss.Run());
+            };
+        }
+
+        internal static Action save()
+        {
+            if (!TriggerConfig.SaveEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: save disabled");
+
+            return () =>
+            {
+                Plugin.ShowOverrideNotification("trigger: save");
+
+                // same dispatch the game's periodic autosave does in OpenFileDialog.Update()
+                var character = Plugin.Character;
+                switch (character.platform)
+                {
+                    case platform.Kartridge:
+                        character.saveLoad.quicklySaveStandalone();
+                        break;
+
+                    case platform.Steam:
+                        character.saveLoad.quicklySaveSteam();
+                        character.saveLoad.saveGamestateToSteamCloud();
+                        break;
+
+                    default:
+                        character.saveLoad.quicklySave();
+                        break;
+                }
+
+                AutoSaves.DoSave("RemoteSave");
             };
         }
 

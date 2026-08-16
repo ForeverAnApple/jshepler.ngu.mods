@@ -38,6 +38,12 @@ namespace jshepler.ngu.mods.WebService.GO
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
                     return () => Plugin.ShowOverrideNotification("NGU2GO: equipped");
 
+                // read-only snapshot for external verification - no notification, it gets polled
+                case "status":
+                    json = BuildStatus();
+                    context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
+                    return () => { };
+
                 case "wishstats":
                     json = BuildWishStats();
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
@@ -114,6 +120,84 @@ namespace jshepler.ngu.mods.WebService.GO
             root.Add("magic", magic);
             root.Add("quirk", quirks);
             root.Add("blueHeart", character.inventory.itemList.itemMaxxed[(int)GameData.Items.Heart_Blue]);
+
+            return root.ToString();
+        }
+
+        private static string BuildStatus()
+        {
+            var character = Plugin.Character;
+
+            var boss = new JSONObject();
+            boss.Add("bossID", character.bossID);
+            boss.Add("canNuke", FightBoss.CanNuke);
+            boss.Add("canFight", FightBoss.CanFight);
+            boss.Add("nuking", character.bossController.nukeBoss);
+            boss.Add("fighting", character.bossController.isFighting);
+            boss.Add("autoBossEnabled", AutoBoss.Enabled);
+            boss.Add("autoBossRunning", AutoBoss.IsRunning);
+            boss.Add("hardcore", Hardcore.IsHardcoreGame);
+
+            var augAssignments = new JSONArray();
+            var augControllers = character.augmentsController.augments;
+            for (var i = 0; i < augControllers.Length; i++)
+            {
+                var aug = character.augments.augs[i];
+
+                if (!augControllers[i].augLocked())
+                {
+                    var o = new JSONObject();
+                    o.Add("index", i);
+                    o.Add("kind", "aug");
+                    o.Add("id", i);
+                    o.Add("energy", aug.augEnergy);
+                    augAssignments.Add(o);
+                }
+
+                if (!augControllers[i].upgradeLocked())
+                {
+                    var o = new JSONObject();
+                    o.Add("index", augControllers.Length + i);
+                    o.Add("kind", "upgrade");
+                    o.Add("id", i);
+                    o.Add("energy", aug.upgradeEnergy);
+                    augAssignments.Add(o);
+                }
+            }
+
+            var ritualAssignments = new JSONArray();
+            var bmControllers = character.bloodMagicController.bloodMagics;
+            var unlocked = Math.Min(character.bloodMagicController.ritualsUnlocked(), Math.Min(bmControllers.Length, character.bloodMagic.ritual.Count));
+            for (var i = 0; i < unlocked; i++)
+            {
+                var magic = character.bloodMagic.ritual[i].magic;
+                if (magic <= 0L)
+                    continue;
+
+                var o = new JSONObject();
+                o.Add("index", i);
+                o.Add("magic", magic);
+                ritualAssignments.Add(o);
+            }
+
+            var funnel = new JSONObject();
+            funnel.Add("energyEnabled", AutoFunnel.EnergyEnabled);
+            funnel.Add("magicEnabled", AutoFunnel.MagicEnabled);
+            funnel.Add("energyTarget", AutoFunnel.EnergyTarget);
+            funnel.Add("energyTargetAmount", AutoFunnel.EnergyTargetAmount);
+            funnel.Add("magicTarget", AutoFunnel.MagicTarget);
+            funnel.Add("magicTargetAmount", AutoFunnel.MagicTargetAmount);
+            funnel.Add("augAssignments", augAssignments);
+            funnel.Add("ritualAssignments", ritualAssignments);
+
+            var root = new JSONObject();
+            root.Add("menuID", character.menuID);
+            root.Add("curEnergy", character.curEnergy);
+            root.Add("idleEnergy", character.idleEnergy);
+            root.Add("curMagic", character.magic.curMagic);
+            root.Add("idleMagic", character.magic.idleMagic);
+            root.Add("boss", boss);
+            root.Add("funnel", funnel);
 
             return root.ToString();
         }

@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using System.Text;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace jshepler.ngu.mods
 {
@@ -565,6 +566,44 @@ namespace jshepler.ngu.mods
         internal static void SwapMenu(this MenuSwapper swapper, Menu menu)
         {
             swapper.swapMenu((int)menu);
+        }
+
+        // a plain mod toggle button: solid background + centered label, anchored to a corner of the parent.
+        // menus are hidden by disabling their canvas (see MenuSwapper.swapOut), so the button follows its menu automatically
+        internal static GameObject CreateModButton(this Transform parent, string name, Vector2 size, Vector2 anchoredPosition, Vector2 corner)
+        {
+            var go = new GameObject(name);
+
+            var rt = go.AddComponent<RectTransform>();
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = corner;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = anchoredPosition;
+            rt.localScale = Vector3.one;
+
+            go.AddComponent<Image>();
+
+            var button = go.AddComponent<Button>();
+            button.transition = Selectable.Transition.None; // the feature owns the image color
+
+            var textGO = new GameObject("Text");
+
+            var textRT = textGO.AddComponent<RectTransform>();
+            textRT.SetParent(rt, false);
+            textRT.anchorMin = Vector2.zero;
+            textRT.anchorMax = Vector2.one;
+            textRT.sizeDelta = Vector2.zero;
+            textRT.anchoredPosition = Vector2.zero;
+            textRT.localScale = Vector3.one;
+
+            var text = textGO.AddComponent<Text>();
+            text.font = Fonts.LiberationSans_Bold;
+            text.fontSize = 14;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.black;
+            text.raycastTarget = false;
+
+            return go;
         }
 
         internal static Texture2D CreateSolidColorTexture(this Color32 color, Rect rect)

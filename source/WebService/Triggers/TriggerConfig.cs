@@ -46,6 +46,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             set => Options.RemoteTriggers.Kitty.Enabled.Value = value;
         }
 
+        internal static bool SaveEnabled
+        {
+            get => Options.RemoteTriggers.Save.Enabled.Value;
+            set => Options.RemoteTriggers.Save.Enabled.Value = value;
+        }
+
         internal static bool TwitchIntegrationEnabled
         {
             get => Options.Twitch.Enabled.Value;
@@ -218,6 +224,13 @@ namespace jshepler.ngu.mods.WebService.Triggers
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("disabled", !KittyEnabled ? _selected : _notSelected)) KittyEnabled = false;
             if (GUILayout.Button("enabled", KittyEnabled ? _selected : _notSelected)) KittyEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Save");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !SaveEnabled ? _selected : _notSelected)) SaveEnabled = false;
+            if (GUILayout.Button("enabled", SaveEnabled ? _selected : _notSelected)) SaveEnabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.FlexibleSpace();

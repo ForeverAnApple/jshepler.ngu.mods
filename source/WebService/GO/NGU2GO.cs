@@ -45,6 +45,12 @@ namespace jshepler.ngu.mods.WebService.GO
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
                     return () => { };
 
+                // read-only item dump (id + level per container) - no notification
+                case "inventory":
+                    json = BuildInventory();
+                    context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
+                    return () => { };
+
                 case "wishstats":
                     json = BuildWishStats();
                     context.Response.SendResponse(HttpStatusCode.OK, json, ContentTypes.JSON);
@@ -122,6 +128,41 @@ namespace jshepler.ngu.mods.WebService.GO
             root.Add("quirk", quirks);
             root.Add("blueHeart", character.inventory.itemList.itemMaxxed[(int)GameData.Items.Heart_Blue]);
 
+            return root.ToString();
+        }
+
+        private static string BuildInventory()
+        {
+            var inv = Plugin.Character.inventory;
+            var items = new JSONArray();
+
+            void add(Equipment e, string where)
+            {
+                if (e == null || e.id == 0)
+                    return;
+
+                var o = new JSONObject();
+                o.Add("id", e.id);
+                o.Add("level", e.level);
+                o.Add("where", where);
+                items.Add(o);
+            }
+
+            add(inv.head, "head");
+            add(inv.chest, "chest");
+            add(inv.legs, "legs");
+            add(inv.boots, "boots");
+            add(inv.weapon, "weapon");
+            add(inv.weapon2, "weapon2");
+            foreach (var acc in inv.accs)
+                add(acc, "accessory");
+            foreach (var item in inv.inventory)
+                add(item, "inventory");
+            foreach (var item in inv.daycare)
+                add(item, "daycare");
+
+            var root = new JSONObject();
+            root.Add("items", items);
             return root.ToString();
         }
 

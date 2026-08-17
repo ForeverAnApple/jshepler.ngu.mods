@@ -63,6 +63,9 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "testexp":
                     return testExp(context);
 
+                case "testitemlevel":
+                    return testItemLevel(context);
+
                 default:
                     return () => Plugin.ShowOverrideNotification($"unknown trigger: {trigger}");
             }
@@ -258,6 +261,66 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 caps[id] = cap;
 
                 var message = $"trigger: testsetcap {(isOffense ? "attack" : "defense")} {id} cap {before:N0} -> {cap:N0}";
+                Plugin.LogInfo(message);
+                Plugin.ShowOverrideNotification(message);
+            };
+        }
+
+        // sets the level of every owned copy of the given item ids - equipped, inventory and daycare
+        internal static Action testItemLevel(HttpListenerContext context)
+        {
+            if (!TriggerConfig.TestEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: testitemlevel disabled");
+
+            var query = parseQuery(context);
+
+            if (!query.TryGetValue("ids", out var idsValue) || string.IsNullOrEmpty(idsValue))
+                return () => Plugin.ShowOverrideNotification("trigger: testitemlevel - ids must be a comma separated list of item ids");
+
+            var ids = new HashSet<int>();
+            foreach (var part in idsValue.Split(','))
+            {
+                if (!int.TryParse(part.Trim(), out var id) || id <= 0)
+                    return () => Plugin.ShowOverrideNotification($"trigger: testitemlevel - bad item id \"{part}\"");
+                ids.Add(id);
+            }
+
+            var levelValue = query.TryGetValue("level", out var lv) ? lv : string.Empty;
+            if (!int.TryParse(levelValue, out var level) || level < 0 || level > 100)
+                return () => Plugin.ShowOverrideNotification("trigger: testitemlevel - level must be 0..100");
+
+            return () =>
+            {
+                var character = Plugin.Character;
+                var inv = character.inventory;
+                var changed = 0;
+
+                void apply(Equipment e, string where)
+                {
+                    if (e == null || e.id == 0 || !ids.Contains(e.id) || e.level == level)
+                        return;
+
+                    Plugin.LogInfo($"trigger: testitemlevel - item {e.id} ({where}) level {e.level} -> {level}");
+                    e.level = level;
+                    changed++;
+                }
+
+                apply(inv.head, "head");
+                apply(inv.chest, "chest");
+                apply(inv.legs, "legs");
+                apply(inv.boots, "boots");
+                apply(inv.weapon, "weapon");
+                apply(inv.weapon2, "weapon2");
+                foreach (var acc in inv.accs)
+                    apply(acc, "accessory");
+                foreach (var item in inv.inventory)
+                    apply(item, "inventory");
+                foreach (var item in inv.daycare)
+                    apply(item, "daycare");
+
+                character.inventoryController.updateInventory();
+
+                var message = $"trigger: testitemlevel - {changed} item(s) set to level {level}";
                 Plugin.LogInfo(message);
                 Plugin.ShowOverrideNotification(message);
             };

@@ -17,6 +17,8 @@ namespace jshepler.ngu.mods
             AutoFunnel.EnergyEnabled = Config.Bind("AutoFunnel", "Energy.Enabled", false, "if enabled, idle energy is repeatedly assigned to whichever augment/upgrade already has the most energy");
             AutoFunnel.MagicEnabled = Config.Bind("AutoFunnel", "Magic.Enabled", false, "if enabled, idle magic is repeatedly assigned to whichever ritual already has the most magic");
             AutoFunnel.TimeMachineEnabled = Config.Bind("AutoFunnel", "TimeMachine.Enabled", false, "if enabled, the time machine's speed (energy) and gold multi (magic) bars join the energy and magic funnels as candidate sinks");
+            AutoMergeBoost.Enabled = Config.Bind("AutoMergeBoost", "Enabled", false, "if enabled, periodically runs the game's auto merge and auto boost over equipped gear and the inventory merge slots, skipping the infinity cube");
+            AutoMergeBoost.IntervalSeconds = Config.Bind("AutoMergeBoost", "IntervalSeconds", 60, "seconds between automatic merge+boost passes; values below 10 are treated as 10");
             CapPull.Enabled = Config.Bind("CapPull", "Enabled", false, "if enabled, a basic training cap button pulls the energy it's short of out of augmentation (largest allocation first)");
 
             BloodMagic.NotifiedSpells = Config.Bind("BloodMagic", "NotifiedSpells", NotifiedSpells.IP | NotifiedSpells.GUFFA | NotifiedSpells.GUFFB, "For which spells the Blood Magic button turns purple to notify being ready to cast");
@@ -79,6 +81,7 @@ namespace jshepler.ngu.mods
             RemoteTriggers.FunnelEnergy.Enabled = Config.Bind("RemoteTriggers.FunnelEnergy", "Enabled", true, "enables the trigger that toggles AutoFunnel.Energy.Enabled");
             RemoteTriggers.FunnelMagic.Enabled = Config.Bind("RemoteTriggers.FunnelMagic", "Enabled", true, "enables the trigger that toggles AutoFunnel.Magic.Enabled");
             RemoteTriggers.FunnelTimeMachine.Enabled = Config.Bind("RemoteTriggers.FunnelTimeMachine", "Enabled", true, "enables the trigger that toggles AutoFunnel.TimeMachine.Enabled");
+            RemoteTriggers.AutoMergeBoost.Enabled = Config.Bind("RemoteTriggers.AutoMergeBoost", "Enabled", true, "enables the triggers that toggle AutoMergeBoost.Enabled and run a single merge+boost pass");
             RemoteTriggers.CapPull.Enabled = Config.Bind("RemoteTriggers.CapPull", "Enabled", true, "enables the trigger that toggles CapPull.Enabled");
             RemoteTriggers.Test.Enabled = Config.Bind("RemoteTriggers.Test", "Enabled", false, "DEV ONLY - enables the testfree/testseed triggers, which move energy/magic in and out of sinks on demand");
 
@@ -234,6 +237,11 @@ namespace jshepler.ngu.mods
                 internal static ConfigEntry<bool> Enabled;
             }
 
+            internal static class AutoMergeBoost
+            {
+                internal static ConfigEntry<bool> Enabled;
+            }
+
             internal static class CapPull
             {
                 internal static ConfigEntry<bool> Enabled;
@@ -260,6 +268,12 @@ namespace jshepler.ngu.mods
         internal static class CapPull
         {
             internal static ConfigEntry<bool> Enabled;
+        }
+
+        internal static class AutoMergeBoost
+        {
+            internal static ConfigEntry<bool> Enabled;
+            internal static ConfigEntry<int> IntervalSeconds;
         }
 
         internal static class AutoSnipe

@@ -42,6 +42,13 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "funnelmagic":
                     return funnelToggle(isEnergy: false);
 
+                // url segments arrive lowercased, so trigger/autoMergeBoost lands here
+                case "automergeboost":
+                    return autoMergeBoostToggle();
+
+                case "mergeboostnow":
+                    return mergeBoostNow();
+
                 case "funneltm":
                     return funnelTimeMachineToggle();
 
@@ -375,6 +382,30 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 var message = $"trigger: testap - AP {before:N0} -> {arbitrary.curArbitraryPoints:N0}";
                 Plugin.LogInfo(message);
                 Plugin.ShowOverrideNotification(message);
+            };
+        }
+
+        internal static Action autoMergeBoostToggle()
+        {
+            if (!TriggerConfig.AutoMergeBoostEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: automergeboost disabled");
+
+            return () =>
+            {
+                mods.AutoMergeBoost.Enabled = !mods.AutoMergeBoost.Enabled;
+                Plugin.ShowOverrideNotification($"trigger: automergeboost {(mods.AutoMergeBoost.Enabled ? "ON" : "OFF")}");
+            };
+        }
+
+        internal static Action mergeBoostNow()
+        {
+            if (!TriggerConfig.AutoMergeBoostEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: mergeboostnow disabled");
+
+            return () =>
+            {
+                mods.AutoMergeBoost.RunPass("mergeboostnow");
+                Plugin.ShowOverrideNotification($"trigger: mergeboostnow - {mods.AutoMergeBoost.LastRunSummary}");
             };
         }
 

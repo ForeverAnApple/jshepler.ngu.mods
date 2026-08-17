@@ -76,6 +76,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             set => Options.RemoteTriggers.FunnelTimeMachine.Enabled.Value = value;
         }
 
+        internal static bool AutoMergeBoostEnabled
+        {
+            get => Options.RemoteTriggers.AutoMergeBoost.Enabled.Value;
+            set => Options.RemoteTriggers.AutoMergeBoost.Enabled.Value = value;
+        }
+
         internal static bool CapPullEnabled
         {
             get => Options.RemoteTriggers.CapPull.Enabled.Value;
@@ -156,7 +162,7 @@ namespace jshepler.ngu.mods.WebService.Triggers
 
         private static void InitPopup()
         {
-            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 560);
+            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 590);
             _blocker = buildBLocker();
             IsOpen = false;
 
@@ -288,6 +294,13 @@ namespace jshepler.ngu.mods.WebService.Triggers
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("disabled", !FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = false;
             if (GUILayout.Button("enabled", FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Auto Merge+Boost");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !AutoMergeBoostEnabled ? _selected : _notSelected)) AutoMergeBoostEnabled = false;
+            if (GUILayout.Button("enabled", AutoMergeBoostEnabled ? _selected : _notSelected)) AutoMergeBoostEnabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal("box");

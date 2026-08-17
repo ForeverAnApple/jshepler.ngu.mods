@@ -136,30 +136,46 @@ namespace jshepler.ngu.mods.WebService.GO
             var inv = Plugin.Character.inventory;
             var items = new JSONArray();
 
-            void add(Equipment e, string where)
+            // slot is the game's own id space (-1..-6 equipped, 10000+ accessories, 0+ inventory,
+            // 100000+ daycare) so an emptied slot shows up as a missing ordinal in an external diff
+            void add(Equipment e, string where, int slot)
             {
                 if (e == null || e.id == 0)
                     return;
 
                 var o = new JSONObject();
+                o.Add("slot", slot);
                 o.Add("id", e.id);
                 o.Add("level", e.level);
                 o.Add("where", where);
+                o.Add("type", e.type.ToString());
+                o.Add("removable", e.removable);
+                o.Add("isBoost", e.isBoost());
+                o.Add("curAttack", e.curAttack);
+                o.Add("capAttack", e.capAttack);
+                o.Add("curDefense", e.curDefense);
+                o.Add("capDefense", e.capDefense);
+                o.Add("spec1Cur", e.spec1Cur);
+                o.Add("spec1Cap", e.spec1Cap);
+                o.Add("spec2Cur", e.spec2Cur);
+                o.Add("spec2Cap", e.spec2Cap);
+                o.Add("spec3Cur", e.spec3Cur);
+                o.Add("spec3Cap", e.spec3Cap);
                 items.Add(o);
             }
 
-            add(inv.head, "head");
-            add(inv.chest, "chest");
-            add(inv.legs, "legs");
-            add(inv.boots, "boots");
-            add(inv.weapon, "weapon");
-            add(inv.weapon2, "weapon2");
-            foreach (var acc in inv.accs)
-                add(acc, "accessory");
-            foreach (var item in inv.inventory)
-                add(item, "inventory");
-            foreach (var item in inv.daycare)
-                add(item, "daycare");
+            add(inv.head, "head", -1);
+            add(inv.chest, "chest", -2);
+            add(inv.legs, "legs", -3);
+            add(inv.boots, "boots", -4);
+            add(inv.weapon, "weapon", -5);
+            add(inv.weapon2, "weapon2", -6);
+            for (var i = 0; i < inv.accs.Count; i++)
+                add(inv.accs[i], "accessory", 10000 + i);
+            for (var i = 0; i < inv.inventory.Count; i++)
+                add(inv.inventory[i], "inventory", i);
+            for (var i = 0; i < inv.daycare.Count; i++)
+                add(inv.daycare[i], "daycare", 100000 + i);
 
             var root = new JSONObject();
             root.Add("items", items);
@@ -271,6 +287,13 @@ namespace jshepler.ngu.mods.WebService.GO
             root.Add("exp", character.realExp);
             root.Add("boss", boss);
             root.Add("funnel", funnel);
+            var mergeBoost = new JSONObject();
+            mergeBoost.Add("enabled", AutoMergeBoost.Enabled);
+            mergeBoost.Add("intervalSeconds", AutoMergeBoost.IntervalSeconds);
+            mergeBoost.Add("runs", AutoMergeBoost.Runs);
+            mergeBoost.Add("lastRunSummary", AutoMergeBoost.LastRunSummary);
+            root.Add("autoMergeBoost", mergeBoost);
+
             root.Add("capPullEnabled", CapPull.Enabled);
             root.Add("syncTraining", character.settings.syncTraining);
             root.Add("trainings", trainings);

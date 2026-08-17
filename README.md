@@ -1134,3 +1134,10 @@ If it continues to stay disconnected, please send me the `...\Steam\steamapps\co
 
 285. hardened the trigger/web listener - a bad request, an aborted client, or a save-load can no longer kill it
     - requests are handled on their own threads and the accept loop restarts itself if it ever dies
+
+286. auto merge + boost on a timer - `MergeBoost: ON/OFF` button on the inventory screen; when on, every 60s (configurable) runs the game's own auto-merge, then boosts gear *without* feeding leftover boosts into the infinity cube
+    - merging is untouched vanilla `autoMerge()` (equipped absorbs its copies in place, then the inventory merge slots)
+    - boosting is vanilla minus the `infinityCubeAll()` call at the end, and targets are ordered by most unfilled boostable capacity first (equipped before inventory) instead of fixed slot order - so boosts go where they do the most, and the cube never eats them
+    - respects your in-game merge/boost slot settings, skips passes mid-drag, doesn't touch vanilla's own hourly timer
+    - `trigger/automergeboost` toggles it, `trigger/mergeboostnow` runs one pass on demand; each pass logs a summary (merged ids, boosts consumed) also visible in `ngu2go/status`
+    - `ngu2go/inventory` now emits slot/type/removable/isBoost and all cur/cap stats, enough to audit a pass externally

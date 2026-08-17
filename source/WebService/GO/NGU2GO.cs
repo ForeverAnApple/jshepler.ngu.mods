@@ -218,6 +218,7 @@ namespace jshepler.ngu.mods.WebService.GO
             // polls means the user's typed amount is being clobbered
             root.Add("input", character.input.energyMagicInput);
             root.Add("ap", character.arbitrary.curArbitraryPoints);
+            root.Add("exp", character.realExp);
             root.Add("boss", boss);
             root.Add("funnel", funnel);
             root.Add("capPullEnabled", CapPull.Enabled);

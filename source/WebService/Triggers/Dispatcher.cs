@@ -60,6 +60,9 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "testap":
                     return testAp(context);
 
+                case "testexp":
+                    return testExp(context);
+
                 default:
                     return () => Plugin.ShowOverrideNotification($"unknown trigger: {trigger}");
             }
@@ -255,6 +258,30 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 caps[id] = cap;
 
                 var message = $"trigger: testsetcap {(isOffense ? "attack" : "defense")} {id} cap {before:N0} -> {cap:N0}";
+                Plugin.LogInfo(message);
+                Plugin.ShowOverrideNotification(message);
+            };
+        }
+
+        // grants an exact amount of EXP (no gain bonuses applied, unlike Character.addExp)
+        internal static Action testExp(HttpListenerContext context)
+        {
+            if (!TriggerConfig.TestEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: testexp disabled");
+
+            var query = parseQuery(context);
+            var amountValue = query.TryGetValue("amount", out var a) ? a : string.Empty;
+            if (!long.TryParse(amountValue, out var amount) || amount <= 0L)
+                return () => Plugin.ShowOverrideNotification("trigger: testexp - amount must be a positive integer");
+
+            return () =>
+            {
+                var character = Plugin.Character;
+                var before = character.realExp;
+                character.realExp += amount;
+                character.stats.totalExp += amount;
+
+                var message = $"trigger: testexp - EXP {before:N0} -> {character.realExp:N0}";
                 Plugin.LogInfo(message);
                 Plugin.ShowOverrideNotification(message);
             };

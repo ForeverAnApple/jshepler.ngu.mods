@@ -18,6 +18,10 @@ namespace jshepler.ngu.mods
         private static readonly Vector2 ButtonOffset = new Vector2(-8f, 8f);
         private static readonly Vector2 BottomRight = new Vector2(1f, 0f);
 
+        // one iteration per distinct id in the bag; the processed set already bounds the sweep,
+        // this is just a hard stop in case the inventory grows a pathological shape
+        private const int MaxSweepGroups = 500;
+
         internal static bool Enabled
         {
             get => Options.AutoMergeBoost.Enabled.Value;
@@ -115,9 +119,12 @@ namespace jshepler.ngu.mods
 
             var before = snapshot();
 
+            var invWide = 0;
+
             try
             {
                 controller.autoMerge();
+                invWide = mergeInventoryWide();
                 boostAllExceptCube();
             }
 
@@ -130,8 +137,100 @@ namespace jshepler.ngu.mods
             }
 
             Runs++;
-            LastRunSummary = $"{reason}: {diff(before)}";
+            LastRunSummary = $"{reason}: {diff(before)} invWide={invWide}";
             Plugin.LogInfo($"AutoMergeBoost: {LastRunSummary}");
+        }
+
+        // vanilla autoMerge() only aims mergeAll() at the equipped slots, the accessories, the
+        // macguffins and the first totalInvMergeSlots() inventory slots - duplicates sitting deeper
+        // in the bag never merge. this sweeps the whole bag with the same primitive.
+        private static int mergeInventoryWide()
+        {
+            var character = Plugin.Character;
+            var controller = character.inventoryController;
+
+            var processed = new HashSet<int>();
+            var merged = 0;
+
+            // each mergeAll() drains one id group, so the loop is bounded by the distinct ids present
+            for (var guard = 0; guard < MaxSweepGroups; guard++)
+            {
+                var receiver = nextGroupReceiver(processed);
+                if (receiver < 0)
+                    break;
+
+                var id = character.inventory.inventory[receiver].id;
+                processed.Add(id);
+
+                var before = countCopies(id);
+                controller.mergeAll(receiver);
+                merged += Math.Max(0, before - countCopies(id));
+            }
+
+            return merged;
+        }
+
+        // recomputed from live inventory on every call: a merge that trips checkItemTransform
+        // replaces the receiver with a different item, so any plan built up front goes stale
+        private static int nextGroupReceiver(HashSet<int> processed)
+        {
+            var character = Plugin.Character;
+            var inventory = character.inventory.inventory;
+            var spaces = Math.Min(character.inventoryController.curSpaces(), inventory.Count);
+
+            for (var i = 0; i < spaces; i++)
+            {
+                var item = inventory[i];
+
+                if (item.id == 0 || processed.Contains(item.id))
+                    continue;
+
+                // boosts stay with vanilla: mergeAll would merge them under its own maxxed/level
+                // rules, but boost levelling is the auto-boost path's business, not this sweep's.
+                // macguffins are already pulled into the equipped macguffin slots by autoMerge().
+                if (item.isBoost() || item.isMacGuffin())
+                    continue;
+
+                var receiver = -1;
+                var bestLevel = -1;
+                var copies = 0;
+
+                for (var j = 0; j < spaces; j++)
+                {
+                    if (inventory[j].id != item.id)
+                        continue;
+
+                    copies++;
+
+                    // highest level wins; ties go to the lowest slot index for determinism
+                    if (inventory[j].level > bestLevel)
+                    {
+                        bestLevel = inventory[j].level;
+                        receiver = j;
+                    }
+                }
+
+                if (copies >= 2 && receiver >= 0)
+                    return receiver;
+
+                processed.Add(item.id);
+            }
+
+            return -1;
+        }
+
+        private static int countCopies(int id)
+        {
+            var character = Plugin.Character;
+            var inventory = character.inventory.inventory;
+            var spaces = Math.Min(character.inventoryController.curSpaces(), inventory.Count);
+            var count = 0;
+
+            for (var i = 0; i < spaces; i++)
+                if (inventory[i].id == id)
+                    count++;
+
+            return count;
         }
 
         // vanilla InventoryController.autoBoost() with two changes:

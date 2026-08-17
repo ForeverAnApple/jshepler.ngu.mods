@@ -70,6 +70,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             set => Options.RemoteTriggers.FunnelMagic.Enabled.Value = value;
         }
 
+        internal static bool FunnelTimeMachineEnabled
+        {
+            get => Options.RemoteTriggers.FunnelTimeMachine.Enabled.Value;
+            set => Options.RemoteTriggers.FunnelTimeMachine.Enabled.Value = value;
+        }
+
         internal static bool CapPullEnabled
         {
             get => Options.RemoteTriggers.CapPull.Enabled.Value;
@@ -150,7 +156,7 @@ namespace jshepler.ngu.mods.WebService.Triggers
 
         private static void InitPopup()
         {
-            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 530);
+            _windowRect = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 114, 400, 560);
             _blocker = buildBLocker();
             IsOpen = false;
 
@@ -282,6 +288,13 @@ namespace jshepler.ngu.mods.WebService.Triggers
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("disabled", !FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = false;
             if (GUILayout.Button("enabled", FunnelMagicEnabled ? _selected : _notSelected)) FunnelMagicEnabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label("Funnel TM Toggle");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("disabled", !FunnelTimeMachineEnabled ? _selected : _notSelected)) FunnelTimeMachineEnabled = false;
+            if (GUILayout.Button("enabled", FunnelTimeMachineEnabled ? _selected : _notSelected)) FunnelTimeMachineEnabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal("box");

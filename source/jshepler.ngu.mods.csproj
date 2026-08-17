@@ -40,7 +40,9 @@
         </EmbeddedResource>
     </ItemGroup>
 
-    <Target Name="CopyDLL" AfterTargets="Build">
+    <!-- opt-in: overwriting the DLL while the game runs memory-corrupts the mapped assembly
+         under Proton/mono - two wine coredumps on 2026-08-16. Deploy only with the game closed. -->
+    <Target Name="CopyDLL" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
         <Copy SourceFiles="$(TargetDir)$(AssemblyName).dll" DestinationFolder="$(GameFolder)\BepInEx\plugins" />
     </Target>
 </Project>

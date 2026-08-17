@@ -245,6 +245,15 @@ namespace jshepler.ngu.mods.WebService.GO
             funnel.Add("magicTarget", AutoFunnel.MagicTarget);
             funnel.Add("magicTargetAmount", AutoFunnel.MagicTargetAmount);
             funnel.Add("ritualsUnlockedCount", unlocked);
+
+            // the time machine's two bars, enrolled as candidates in both funnels by one toggle.
+            // energyTarget/magicTarget == tmSink means the time machine won this tick.
+            funnel.Add("tmEnrolled", AutoFunnel.TimeMachineEnabled);
+            funnel.Add("tmSink", AutoFunnel.TimeMachineSink);
+            funnel.Add("tmEnergy", character.machine.speedEnergy);
+            funnel.Add("tmMagic", character.machine.goldMultiMagic);
+            funnel.Add("tmEnergyAllocator", AutoFunnel.TmEnergyAllocatorOn);
+            funnel.Add("tmMagicAllocator", AutoFunnel.TmMagicAllocatorOn);
             funnel.Add("augAssignments", augAssignments);
             funnel.Add("ritualAssignments", ritualAssignments);
 

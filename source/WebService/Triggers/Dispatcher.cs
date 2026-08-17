@@ -42,6 +42,9 @@ namespace jshepler.ngu.mods.WebService.Triggers
                 case "funnelmagic":
                     return funnelToggle(isEnergy: false);
 
+                case "funneltm":
+                    return funnelTimeMachineToggle();
+
                 case "cappull":
                     return capPullToggle();
 
@@ -375,6 +378,18 @@ namespace jshepler.ngu.mods.WebService.Triggers
             };
         }
 
+        internal static Action funnelTimeMachineToggle()
+        {
+            if (!TriggerConfig.FunnelTimeMachineEnabled)
+                return () => Plugin.ShowOverrideNotification("trigger: funneltm disabled");
+
+            return () =>
+            {
+                mods.AutoFunnel.TimeMachineEnabled = !mods.AutoFunnel.TimeMachineEnabled;
+                Plugin.ShowOverrideNotification($"trigger: funneltm {(mods.AutoFunnel.TimeMachineEnabled ? "ON" : "OFF")}");
+            };
+        }
+
         internal static Action capPullToggle()
         {
             if (!TriggerConfig.CapPullEnabled)
@@ -481,6 +496,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             var character = Plugin.Character;
             var controllers = character.augmentsController.augments;
 
+            if (sink == mods.AutoFunnel.TimeMachineSink)
+            {
+                moveTimeMachine(name, isSeed, isEnergy: true, takeAll: takeAll, amount: amount);
+                return;
+            }
+
             // flat index: 0..6 augs, 7..13 their upgrades - same convention as the status endpoint
             var isUpgrade = sink >= controllers.Length;
             var id = isUpgrade ? sink - controllers.Length : sink;
@@ -533,6 +554,12 @@ namespace jshepler.ngu.mods.WebService.Triggers
             var controllers = character.bloodMagicController.bloodMagics;
             var unlocked = Math.Min(character.bloodMagicController.ritualsUnlocked(), Math.Min(controllers.Length, character.bloodMagic.ritual.Count));
 
+            if (sink == mods.AutoFunnel.TimeMachineSink)
+            {
+                moveTimeMachine(name, isSeed, isEnergy: false, takeAll: takeAll, amount: amount);
+                return;
+            }
+
             if (sink >= unlocked)
             {
                 Plugin.ShowOverrideNotification($"trigger: {name} - sink {sink} out of range (0-{unlocked - 1})");
@@ -563,6 +590,48 @@ namespace jshepler.ngu.mods.WebService.Triggers
             input.energyMagicInput = requested;
 
             var message = $"trigger: {name} magic {sinkName} {before} -> {ritual.magic}, idle {character.magic.idleMagic}";
+
+            Plugin.ShowOverrideNotification(message);
+            Plugin.LogInfo(message);
+        }
+
+        // sink 14 for either resource: the time machine's speed bar (energy) / gold multi bar (magic)
+        private static void moveTimeMachine(string name, bool isSeed, bool isEnergy, bool takeAll, long amount)
+        {
+            var character = Plugin.Character;
+            var machine = character.machine;
+            var sinkName = isEnergy ? "tm speed" : "tm gold multi";
+
+            var before = isEnergy ? machine.speedEnergy : machine.goldMultiMagic;
+            var idle = isEnergy ? character.idleEnergy : character.magic.idleMagic;
+            var request = takeAll ? (isSeed ? idle : before) : amount;
+
+            if (request <= 0L)
+            {
+                Plugin.ShowOverrideNotification($"trigger: {name} - nothing to move for {sinkName}");
+                return;
+            }
+
+            var input = character.input;
+            var requested = input.energyMagicInput;
+            input.energyMagicInput = request;
+
+            if (isEnergy)
+            {
+                if (isSeed) character.timeMachineController.addEnergy();
+                else character.timeMachineController.removeEnergy();
+            }
+            else
+            {
+                if (isSeed) character.timeMachineController.addMagic();
+                else character.timeMachineController.removeMagic();
+            }
+
+            input.energyMagicInput = requested;
+
+            var after = isEnergy ? machine.speedEnergy : machine.goldMultiMagic;
+            var idleAfter = isEnergy ? character.idleEnergy : character.magic.idleMagic;
+            var message = $"trigger: {name} {(isEnergy ? "energy" : "magic")} {sinkName} {before} -> {after}, idle {idleAfter}";
 
             Plugin.ShowOverrideNotification(message);
             Plugin.LogInfo(message);

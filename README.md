@@ -5,6 +5,8 @@ I had not intended to make these public, as I don't want to support them long-te
 
 The majority are QoL enhancements. There are a couple bug fixes, and few things that are somewhat cheaty-ish but nothing majorly so.
 
+***This fork*** adds a few mods of its own - auto boss (279), auto funnel (280), cap pull (281), a remote save (282), read-only web endpoints (283), test/cheat triggers (284, default disabled) - and hardens the web listener (285). It's built from source rather than using upstream's release dll.
+
 # Installation
 These mods are written for [bepinex](https://github.com/BepInEx/BepInEx) v5.4.21, which can be downloaded [here](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.21). Download the x64 version and extract the contents of the zip file:
 
@@ -21,6 +23,15 @@ Bepinex will set itself up the first time the game is run after extracting the z
 Download the latest `jshepler.ngu.mods.dll` file from [releases](https://github.com/jshepler/jshepler.ngu.mods/releases) and put it in `...\Steam\steamapps\common\NGU IDLE\BepInEx\plugins`.
 
 ![dll file location](dll.png)
+
+# Building (this fork)
+On linux, build with mono's msbuild (the dotnet sdk chokes on the binary resources in the resx):
+
+```
+msbuild /restore /p:Configuration=Release "/p:GameFolder=<path to NGU IDLE>" source/jshepler.ngu.mods.csproj
+```
+
+The build only copies the dll into the game folder when given `/p:DeployToGame=true`. ***Never deploy while the game is running*** - on linux/proton the overwrite lands on a memory-mapped assembly and the game dies minutes later with no useful error. Save (`trigger/save`), close the game, copy the dll, start the game.
 
 # Configuration
 The first time the game is run after installing the mods, a configuration file is created: `...\Steam\steamapps\common\NGU IDLE\BepInEx\config\jshepler.ngu.mods.cfg`.
@@ -448,6 +459,11 @@ If it continues to stay disconnected, please send me the `...\Steam\steamapps\co
     - fightBoss: if able to win fight, switches to boss screen, nukes (if able), fight boss (if winnable), returns to prev screen
     - kitty: starts troll challenge big troll's kitty event (for fun)
     - totalTimePlayed: generates html to display timer starting from current Total Time Player
+    - save: executes the game's own quick-save (same as the periodic autosave), plus a dated RemoteSave backup - see 282
+    - autoboss / funnelenergy / funnelmagic / funneltm / cappull: toggle the respective mods (279, 280, 281) remotely
+    - testseed / testfree / testcap / testsetcap / testap / testexp / testitemlevel: test/cheat commands, disabled by default - see 284
+
+    note: trigger requests now get a `200 OK` response *after* the action has run on the game's thread; they used to never respond
 
     has config options:
     - Enabled: if disabled, ignores commands (except totalTimePlayed)
@@ -1083,3 +1099,38 @@ If it continues to stay disconnected, please send me the `...\Steam\steamapps\co
 277. fix game bug that wasn't counting online titan AKs for "Titans Defeated" on the misc stats screen
 
 278. changed the item set completion tooltips and notifications to show the total exp/ap gain instead of the base (contributed by discord user shadowevil)
+
+279. auto boss - adds an `Auto: ON/OFF` button to the boss menu; when on, checks every 0.5s and nukes the boss (if able) or fights (if winnable), nuke prioritized
+    - state is saved in the cfg (`AutoBoss.Enabled`) so it persists through rebirths and restarts
+    - does nothing in hardcore mode or while a fight/nuke is already running
+
+280. auto funnel - keeps newly generated energy/magic out of the idle pool by dumping it every 0.5s into whichever enrolled bar already holds the most of it
+    - `Funnel: ON/OFF` buttons on the augments screen (enrolls augs + upgrades for energy), the blood magic screen (enrolls rituals for magic), and the time machine screen (enrolls the TM speed bar for energy and the gold multi bar for magic)
+    - enable any combination; per resource, the largest enrolled bar takes all idle. nothing enrolled = funnel does nothing
+    - uses the game's own add code so the input amount you typed is left alone
+    - a TM bar is skipped while its ++ auto-allocator (31) is on, or while its level target is already reached - in both cases the energy would just get bounced back every tick
+    - won't overwrite manual work: it only moves *idle* resources, never reallocates what you placed
+
+281. cap pull - `Cap Pull: ON/OFF` button on the basic training screen; when on, clicking a training's cap button may pull allocated energy out of augmentation to cover what idle can't
+    - pulls exactly the shortfall, from the largest aug/upgrade bars first, through the game's own remove code
+    - works with sync training on/off and the cap-all button; if augs + idle still aren't enough, caps partially like vanilla would
+    - off = vanilla behavior, untouched
+
+282. remote save - `trigger/save` runs the same save dispatch the periodic autosave uses (steam cloud included on steam), then writes a dated `RemoteSave_*.txt` backup to the mod's save folder
+    - made for restarting the game from scripts without losing progress; the 200 response means the save is on disk, not merely queued
+
+283. read-only web endpoints for external tools (no toasts, safe to poll):
+    - `ngu2go/status`: json snapshot of boss state (id, nukeable/fightable, auto boss), funnel state (enrolled bars, current targets, assignments), idle/total energy & magic, basic training rows, ap, exp
+    - `ngu2go/inventory`: every owned item's id + level + where it is (equipped/inventory/daycare)
+    - also removed the toast from `ngu2go/equipped` since external gear tools poll it on a timer
+
+284. test triggers - move resources and grant things on demand from outside the game; behind `RemoteTriggers.Test.Enabled`, *default disabled* since these are half test-harness, half outright cheating
+    - `testseed`/`testfree?res=energy|magic&sink=N&amount=N|all`: add/remove through the game's own +/- code; sinks 0-6 = augs, 7-13 = upgrades, 14 = time machine bar; for magic, ritual index or 14
+    - `testcap?training=0..11`: presses a basic training row's cap button (0-5 attack, 6-11 defense)
+    - `testsetcap?training=N&cap=N`: sets a row's speed cap (it's a user setting - note the old value first)
+    - `testap?amount=N` / `testexp?amount=N`: grants the exact amount, no gain bonuses applied
+    - `testitemlevel?ids=54,55,...&level=N`: sets the level of every owned copy of those item ids
+    - every command reports real before -> after in the notification and the log, so a no-op is visible
+
+285. hardened the trigger/web listener - a bad request, an aborted client, or a save-load can no longer kill it
+    - requests are handled on their own threads and the accept loop restarts itself if it ever dies
